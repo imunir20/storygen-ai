@@ -17,10 +17,7 @@ const io = new Server(server, {
 });
 
 // Initialize Anthropic API client
-const anthropic = new Anthropic({
-  apiKey:
-    "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",
-});
+const anthropic = new Anthropic();
 
 // Handle new socket connections
 let userCount = 0;
