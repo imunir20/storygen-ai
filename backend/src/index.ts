@@ -11,28 +11,43 @@ const server = createServer(app);
 // Configure Socket.IO server with CORS settings
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000", // Allow connections from this origin
+    origin: "http://localhost:4000", // Allow connections from this origin
     methods: ["GET", "POST"], // Allow these HTTP methods
   },
 });
 
 // Initialize Anthropic API client
-const anthropic = new Anthropic();
+const anthropic = new Anthropic({
+  apiKey:
+    "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",
+});
 
 // Handle new socket connections
 let userCount = 0;
+let ids: number[] = [];
 
 io.on("connection", (socket) => {
+  console.log("Aaaaa user connected:", socket.id);
+  console.log("User count before increment:", userCount);
   userCount++;
+  console.log("User count after increment:", userCount);
   io.emit("user-count", userCount);
-
-  console.log("A user connected:", socket.id);
+  console.log("Emitted increased users:", userCount);
 
   // Handle text updates from clients
   socket.on("text-update", (text) => {
     console.log("Received text update from", socket.id, ":", text);
     io.emit("text-update", text); // Broadcast the update to all connected clients
     console.log("Broadcasted text update to all clients");
+  });
+
+  socket.on("id", (id) => {
+    console.log("Received id from", socket.id, ":", id);
+    if (!ids.includes(id)) {
+      ids.push(id);
+      userCount++;
+    }
+    console.log("Broadcasted id to all clients");
   });
 
   // Handle typing indicator
@@ -54,7 +69,7 @@ io.on("connection", (socket) => {
         max_tokens: 300,
         temperature: 0.7,
         system:
-          "You are a creative writing assistant. You will be given a short story and asked to continue it with 2-3 new sentences. Generate only the REST of the story with 2-3 new sentences.",
+          "You are a funny and creative story writer. You will be given a short story and asked to continue it with 2-3 new sentences. You should output nothing but the REST of the story starting with the next sentence.",
         messages: [
           {
             role: "user",
@@ -73,10 +88,14 @@ io.on("connection", (socket) => {
   });
 
   // Handle client disconnection
-  socket.on("disconnect", () => {
-    userCount--;
-    io.emit("user-count", userCount);
+  socket.on("disconnect", (socket_id) => {
     console.log("A user disconnected:", socket.id);
+    console.log("User count before decrement:", userCount);
+    userCount--;
+
+    console.log("User count after decrement:", userCount);
+    io.emit("user-count", userCount);
+    console.log("Emitted decreased users:", userCount);
   });
 });
 
@@ -84,4 +103,5 @@ io.on("connection", (socket) => {
 const PORT = 4000;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log("User count before server start:", userCount);
 });
